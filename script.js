@@ -1,16 +1,11 @@
-    let arr = location.href.split("/");
-    arr.pop();
-    let str_http = arr.shift();
-    arr.forEach(function (item) {
-        str_http +="/"+item;
-    });
 
     let obj_city = []; // переменная со списком городов
 
-    let city_input = document.getElementById('city-input'),
-        list_name  = city_input.getAttribute('list');
+    let city_input = document.getElementById('city-input'), // инпут для ввода названия города
+        list_name  = city_input.getAttribute('list');      // Получаем идентификатор списка опшинов для инпута
 
-    if(city_input){
+    //Если инпут найден навешиваем слушителя на изменение в инпуте
+    if(city_input != null){
         city_input.addEventListener('input', listenerInput);
     }
 
@@ -28,20 +23,24 @@
         if(val.length > 0 && test === true){
             create_lis_city();
         }else if(val.length > 0  && test === false){
-            obj_city = [];
-            removeList();
-            get_city_from_bd(val);
+            obj_city = []; //зачишаем массив
+            removeList();  //зачищаем список опшинов
+            get_city_from_bd(val); //обновляем массив и создаем новый список опшинов 
 
         }else{
-            obj_city = [];
             test = false;
-            removeList();
+            obj_city = []; //зачишаем массив
+            removeList();  //зачищаем список опшинов
         }
+        
         //проверка на наличее в масиве нужного значения
         if(obj_city.length > 0){
             obj_city.forEach((item)=>{
                 console.log(item.indexOf(val));
                 if(val.length > 0 && item.indexOf(val) > -1){
+                    //если в массиве найдется хоть одно значение с нужным сочитанием то взводим флаг
+                    //чтобы не было лишних обращений к базе
+                    // и прерываем перебор
                     test = true;
                     return;
                 }
@@ -59,21 +58,22 @@
     function removeList() {
         let list = document.getElementById(list_name);
         if(list != null){
+            // просто зачищаем все опшины
             list.innerHTML = "";
         }
     }
 
     /**
      * Получение списка городов из БД
-     * @param city
+     * @param city - то что ввел пользователь в инпут
      */
     function get_city_from_bd(city) {
         $.ajax({
-            url: str_http + "/lk/get_city",
+            url: "post.php",
             type: "POST",
             data: {get_city: 1, city: city},
             dataType: "JSON",
-            success: function (html) {
+            success: function (json) {
                 /**
                  * status:
                  * 0) - ничего не найдено,
@@ -82,16 +82,12 @@
                  * 3) - мало букв для поиска
                  * 4) - не правильные параметры пост запроса
                  */
-
-                //return data;
-                //console.log(html);
-                switch (html.status){
+                switch (json.status){
                     case 0:
                         console.log('ничего не найдено');
                         break;
                     case 1:
-                        //console.log(html.data);
-                        obj_city = html.data;
+                        obj_city = json.data;
                         break;
                     case 2:
                         console.log('нет русских букв');
@@ -126,21 +122,25 @@
          * </datalist>
          * @type {HTMLElement}
          */
+        //пытаемся сначала найти уже существующий лист
         let datalist = document.getElementById(list_name);
 
         if(datalist != null ){
+            //если есть то зачистить его от старых опшинов
             datalist.innerHTML = "";
         }else{
+            //если нет создать новый
             datalist = document.createElement('datalist');
+            //добавить идентификатор листа (получаем из атрибута list у инпута в который пользователь вводит названия)
             datalist.id = list_name;
         }
-
+        // добавляем новые опшины в лист
         for(let item of obj_city){
             let option = document.createElement("option");
             option.value = item;
             option.setAttribute('label', item);
             datalist.appendChild(option);
         }
-
+        // запихиваем лист в конец боди ( без разницы куда помещать)
         document.body.appendChild(datalist);
     }
